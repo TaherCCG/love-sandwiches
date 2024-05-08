@@ -1,6 +1,5 @@
 import gspread
 from google.oauth2.service_account import Credentials
-from pprint import pprint
 
 SCOPE = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -12,7 +11,6 @@ CREDS = Credentials.from_service_account_file("creds.json")
 SCOPE_CREDS = CREDS.with_scopes(SCOPE)
 GSPREAD_CLIENT = gspread.authorize(SCOPE_CREDS)
 SHEET = GSPREAD_CLIENT.open("love_sandwiches")
-
 
 
 def get_sales_data():
@@ -37,6 +35,7 @@ def get_sales_data():
 
     return sales_data
 
+
 def validate_data(values): 
     """ 
     Inside the try, converts all string values into integers.
@@ -56,6 +55,17 @@ def validate_data(values):
     
     return True
 
+def update_worksheet(data, worksheet):
+    """
+    Receives a list of integers to be inserted into a worksheet.
+    Update the relevant worksheet with the data provided.
+    """
+    print(f"Updating {worksheet} worksheet...\n")
+    worksheet_to_update = SHEET.worksheet(worksheet)
+    worksheet_to_update.append_row(data)
+    print(f"{worksheet} worksheet updated successfully.\n")
+
+
 def calculate_surplus_data(sales_row):
     """
     Compare sales with stock and calculate the surplus for each item type.
@@ -67,30 +77,20 @@ def calculate_surplus_data(sales_row):
     print("Calculating surplus data...\n")
     stock = SHEET.worksheet("stock").get_all_values()
     stock_row = stock[-1]
-    print(f"Stock row: {stock_row}\n")
-    print(f"Sales row: {sales_row}\n")
     
     surplus_data = []
     for stock, sales in zip(stock_row, sales_row):
         surplus = int(stock) - sales
         surplus_data.append(surplus)
-        print(f"Surplus for item: {surplus}\n")
         
     return surplus_data
 
-def update_worksheet(data, worksheet):
-    """
-    Receives a list of integers to be inserted into a worksheet.
-    Update the relevant worksheet with the data provided.
-    """
-    print(f"Updating {worksheet} worksheet...\n")
-    worksheet_to_update = SHEET.worksheet(worksheet)
-    worksheet_to_update.append_row(data)
-    print(f"{worksheet} worksheet updated successfully.\n")
 
 def get_last_5_entries_sales():
     """
-    Collects columns of data from sales worksheet, collecting the last 5 entries for each sandwich and returns the data as a list of lists.
+    Collects columns of data from sales worksheet, 
+    collecting the last 5 entries for each sandwich 
+    and returns the data as a list of lists.
     """
     sales = SHEET.worksheet("sales")
     
@@ -100,6 +100,7 @@ def get_last_5_entries_sales():
         columns.append(column[-5:])
     
     return columns
+
 
 def calculate_stock_data(data):
     """
@@ -116,6 +117,13 @@ def calculate_stock_data(data):
     
     return new_stock_data
 
+def get_stock_values(data):
+    """
+    Retrieve headings from the worksheet and create a dictionary with them.
+    """
+    headings = SHEET.worksheet("stock").row_values(1)
+    return {headings[i]: data[i] for i in range(len(headings))}
+
 
 def main():
     """
@@ -129,10 +137,10 @@ def main():
     sales_columns = get_last_5_entries_sales()
     stock_data = calculate_stock_data(sales_columns)
     update_worksheet(stock_data, "stock")
+    stock_values = get_stock_values(stock_data)
+    print ("Make the following numbers of sandwiches for next market:\n")
+    print(stock_values)
+
 
 print("Welcome to Love Sandwiches Data Automation\n")
 main()
-
-
-
-
